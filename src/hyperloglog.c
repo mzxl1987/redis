@@ -177,6 +177,9 @@
  * memory savings. The exact maximum length of the sparse representation
  * when this implementation switches to the dense representation is
  * configured via the define server.hll_sparse_max_bytes.
+ * 
+ * hyperloglog结构体定义
+ * 
  */
 
 struct hllhdr {
