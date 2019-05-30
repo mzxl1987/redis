@@ -44,17 +44,23 @@
 /* Unused arguments generate annoying warnings... */
 #define DICT_NOTUSED(V) ((void) V)
 
+/**
+ * 字典实体
+ */
 typedef struct dictEntry {
-    void *key;
+    void *key;                                            /* 键 */
     union {
         void *val;
         uint64_t u64;
         int64_t s64;
         double d;
-    } v;
-    struct dictEntry *next;
+    } v;                                                       /* 值 */
+    struct dictEntry *next;                         /* 下一个节点指针 */
 } dictEntry;
 
+/**
+ * 字典类型
+ */
 typedef struct dictType {
     uint64_t (*hashFunction)(const void *key);
     void *(*keyDup)(void *privdata, const void *key);
@@ -66,6 +72,9 @@ typedef struct dictType {
 
 /* This is our hash table structure. Every dictionary has two of this as we
  * implement incremental rehashing, for the old to the new table. */
+/**
+ * 字典的Hash列表
+ */
 typedef struct dictht {
     dictEntry **table;
     unsigned long size;
@@ -73,6 +82,9 @@ typedef struct dictht {
     unsigned long used;
 } dictht;
 
+/**
+ * 字典
+ */
 typedef struct dict {
     dictType *type;
     void *privdata;
@@ -100,6 +112,9 @@ typedef void (dictScanBucketFunction)(void *privdata, dictEntry **bucketref);
 /* This is the initial size of every hash table */
 #define DICT_HT_INITIAL_SIZE     4
 
+/**
+ *  常用的宏定义
+ */
 /* ------------------------------- Macros ------------------------------------*/
 #define dictFreeVal(d, entry) \
     if ((d)->type->valDestructor) \
