@@ -38,6 +38,9 @@
  * by the user before to call AlFreeList().
  *
  * On error, NULL is returned. Otherwise the pointer to the new list. */
+/**
+ * 创建列表
+ */
 list *listCreate(void)
 {
     struct list *list;
@@ -53,6 +56,9 @@ list *listCreate(void)
 }
 
 /* Remove all the elements from the list without destroying the list itself. */
+/**
+ * 清空列表
+ */
 void listEmpty(list *list)
 {
     unsigned long len;
@@ -73,6 +79,9 @@ void listEmpty(list *list)
 /* Free the whole list.
  *
  * This function can't fail. */
+/**
+ * 释放列表申请的空间
+ */
 void listRelease(list *list)
 {
     listEmpty(list);
@@ -85,6 +94,9 @@ void listRelease(list *list)
  * On error, NULL is returned and no operation is performed (i.e. the
  * list remains unaltered).
  * On success the 'list' pointer you pass to the function is returned. */
+/**
+ * 向列表头添加节点
+ */
 list *listAddNodeHead(list *list, void *value)
 {
     listNode *node;
@@ -111,6 +123,9 @@ list *listAddNodeHead(list *list, void *value)
  * On error, NULL is returned and no operation is performed (i.e. the
  * list remains unaltered).
  * On success the 'list' pointer you pass to the function is returned. */
+/**
+ * 向列表尾添加节点
+ */
 list *listAddNodeTail(list *list, void *value)
 {
     listNode *node;
@@ -131,6 +146,9 @@ list *listAddNodeTail(list *list, void *value)
     return list;
 }
 
+/**
+ * 向列表中插入节点
+ */
 list *listInsertNode(list *list, listNode *old_node, void *value, int after) {
     listNode *node;
 
@@ -164,6 +182,9 @@ list *listInsertNode(list *list, listNode *old_node, void *value, int after) {
  * It's up to the caller to free the private value of the node.
  *
  * This function can't fail. */
+/**
+ * 删除节点
+ */
 void listDelNode(list *list, listNode *node)
 {
     if (node->prev)
@@ -247,6 +268,9 @@ listNode *listNext(listIter *iter)
  * the original node is used as value of the copied node.
  *
  * The original list both on success or error is never modified. */
+/**
+ * 队列的复制
+ */
 list *listDup(list *orig)
 {
     list *copy;
@@ -312,6 +336,11 @@ listNode *listSearchKey(list *list, void *key)
  * and so on. Negative integers are used in order to count
  * from the tail, -1 is the last element, -2 the penultimate
  * and so on. If the index is out of range NULL is returned. */
+/**
+ * 队列的查找
+ * 如果index > 0, 则正向查找, 从head开始查找
+ * 如果index < 0, 则反向查找, 从tail开始查找
+ */
 listNode *listIndex(list *list, long index) {
     listNode *n;
 
@@ -327,6 +356,9 @@ listNode *listIndex(list *list, long index) {
 }
 
 /* Rotate the list removing the tail node and inserting it to the head. */
+/**
+ * 双向链表的翻转
+ */
 void listRotate(list *list) {
     listNode *tail = list->tail;
 
@@ -344,6 +376,9 @@ void listRotate(list *list) {
 
 /* Add all the elements of the list 'o' at the end of the
  * list 'l'. The list 'other' remains empty but otherwise valid. */
+/**
+ * 队列的拼接
+ */
 void listJoin(list *l, list *o) {
     if (o->head)
         o->head->prev = l->tail;
