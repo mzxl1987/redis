@@ -34,6 +34,9 @@
  * String Commands
  *----------------------------------------------------------------------------*/
 
+/**
+ * 检查 string 最大长度，MAXLENGTH = 512Mbytes
+ */
 static int checkStringLength(client *c, long long size) {
     if (size > 512*1024*1024) {
         addReplyError(c,"string exceeds maximum allowed size (512MB)");
@@ -64,17 +67,20 @@ static int checkStringLength(client *c, long long size) {
 #define OBJ_SET_EX (1<<2)     /* Set if time in seconds is given */
 #define OBJ_SET_PX (1<<3)     /* Set if time in ms in given */
 
+/**
+ * 执行相关指令操作
+ */
 void setGenericCommand(client *c, int flags, robj *key, robj *val, robj *expire, int unit, robj *ok_reply, robj *abort_reply) {
     long long milliseconds = 0; /* initialized to avoid any harmness warning */
 
-    if (expire) {
+    if (expire) {   /* 超时时间 */
         if (getLongLongFromObjectOrReply(c, expire, &milliseconds, NULL) != C_OK)
             return;
-        if (milliseconds <= 0) {
+        if (milliseconds <= 0) {           /* 时间不合法 */
             addReplyErrorFormat(c,"invalid expire time in %s",c->cmd->name);
             return;
         }
-        if (unit == UNIT_SECONDS) milliseconds *= 1000;
+        if (unit == UNIT_SECONDS) milliseconds *= 1000;          /* 根据单位设定时间 */
     }
 
     if ((flags & OBJ_SET_NX && lookupKeyWrite(c->db,key) != NULL) ||
@@ -93,6 +99,9 @@ void setGenericCommand(client *c, int flags, robj *key, robj *val, robj *expire,
 }
 
 /* SET key value [NX] [XX] [EX <seconds>] [PX <milliseconds>] */
+/**
+ * 设置指令
+ */
 void setCommand(client *c) {
     int j;
     robj *expire = NULL;
@@ -105,17 +114,17 @@ void setCommand(client *c) {
 
         if ((a[0] == 'n' || a[0] == 'N') &&
             (a[1] == 'x' || a[1] == 'X') && a[2] == '\0' &&
-            !(flags & OBJ_SET_XX))
+            !(flags & OBJ_SET_XX))                                                              /* NX */
         {
             flags |= OBJ_SET_NX;
         } else if ((a[0] == 'x' || a[0] == 'X') &&
                    (a[1] == 'x' || a[1] == 'X') && a[2] == '\0' &&
-                   !(flags & OBJ_SET_NX))
+                   !(flags & OBJ_SET_NX))                                                       /* XX */
         {
             flags |= OBJ_SET_XX;
         } else if ((a[0] == 'e' || a[0] == 'E') &&
                    (a[1] == 'x' || a[1] == 'X') && a[2] == '\0' &&
-                   !(flags & OBJ_SET_PX) && next)
+                   !(flags & OBJ_SET_PX) && next)                                              /* EX */
         {
             flags |= OBJ_SET_EX;
             unit = UNIT_SECONDS;
@@ -123,7 +132,7 @@ void setCommand(client *c) {
             j++;
         } else if ((a[0] == 'p' || a[0] == 'P') &&
                    (a[1] == 'x' || a[1] == 'X') && a[2] == '\0' &&
-                   !(flags & OBJ_SET_EX) && next)
+                   !(flags & OBJ_SET_EX) && next)                                               /* PX */
         {
             flags |= OBJ_SET_PX;
             unit = UNIT_MILLISECONDS;
