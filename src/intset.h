@@ -32,6 +32,9 @@
 #define __INTSET_H
 #include <stdint.h>
 
+/**
+ * intset 数据结构
+ */
 typedef struct intset {
     uint32_t encoding;
     uint32_t length;

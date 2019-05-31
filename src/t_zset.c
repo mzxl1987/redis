@@ -66,8 +66,12 @@
 int zslLexValueGteMin(sds value, zlexrangespec *spec);
 int zslLexValueLteMax(sds value, zlexrangespec *spec);
 
-/* Create a skiplist node with the specified number of levels.
- * The SDS string 'ele' is referenced by the node after the call. */
+/** Create a skiplist node with the specified number of levels.
+ * 创建跳跃表节点，并设定levels
+ * The SDS string 'ele' is referenced by the node after the call. 
+ * node将引用ele sds类型的元素
+ * */
+
 zskiplistNode *zslCreateNode(int level, double score, sds ele) {
     zskiplistNode *zn =
         zmalloc(sizeof(*zn)+level*sizeof(struct zskiplistLevel));
@@ -76,7 +80,9 @@ zskiplistNode *zslCreateNode(int level, double score, sds ele) {
     return zn;
 }
 
-/* Create a new skiplist. */
+/** Create a new skiplist. 
+ * 创建新的跳跃表
+*/
 zskiplist *zslCreate(void) {
     int j;
     zskiplist *zsl;
@@ -84,7 +90,7 @@ zskiplist *zslCreate(void) {
     zsl = zmalloc(sizeof(*zsl));
     zsl->level = 1;
     zsl->length = 0;
-    zsl->header = zslCreateNode(ZSKIPLIST_MAXLEVEL,0,NULL);
+    zsl->header = zslCreateNode(ZSKIPLIST_MAXLEVEL,0,NULL);  //创建header, 并设定 max_level
     for (j = 0; j < ZSKIPLIST_MAXLEVEL; j++) {
         zsl->header->level[j].forward = NULL;
         zsl->header->level[j].span = 0;
@@ -94,15 +100,21 @@ zskiplist *zslCreate(void) {
     return zsl;
 }
 
-/* Free the specified skiplist node. The referenced SDS string representation
+/**
+ * Free the specified skiplist node. The referenced SDS string representation
  * of the element is freed too, unless node->ele is set to NULL before calling
- * this function. */
+ * this function. 
+ * 释放跳跃表节点；如果节点的ele设置为NULL，则ele引用的sds string也相应的释放。
+ * */
 void zslFreeNode(zskiplistNode *node) {
     sdsfree(node->ele);
     zfree(node);
 }
 
-/* Free a whole skiplist. */
+/**
+ *  Free a whole skiplist. 
+ * 释放整个跳跃表
+ * */
 void zslFree(zskiplist *zsl) {
     zskiplistNode *node = zsl->header->level[0].forward, *next;
 
@@ -115,10 +127,14 @@ void zslFree(zskiplist *zsl) {
     zfree(zsl);
 }
 
-/* Returns a random level for the new skiplist node we are going to create.
+/** Returns a random level for the new skiplist node we are going to create.
  * The return value of this function is between 1 and ZSKIPLIST_MAXLEVEL
  * (both inclusive), with a powerlaw-alike distribution where higher
- * levels are less likely to be returned. */
+ * levels are less likely to be returned. 
+ * 
+ * 为跳跃表节点返回一个随机的等级，值得范围是[1,ZSKIPLIST_MAXLEVEL]
+ * 
+ * */
 int zslRandomLevel(void) {
     int level = 1;
     while ((random()&0xFFFF) < (ZSKIPLIST_P * 0xFFFF))
@@ -128,8 +144,12 @@ int zslRandomLevel(void) {
 
 /* Insert a new node in the skiplist. Assumes the element does not already
  * exist (up to the caller to enforce that). The skiplist takes ownership
- * of the passed SDS string 'ele'. */
-zskiplistNode *zslInsert(zskiplist *zsl, double score, sds ele) {
+ * of the passed SDS string 'ele'. 
+ * 
+ * 插入一个新的节点，假定节点不存在。
+ * 
+ * */
+zskiplistNode *zslInsert(zskiplist *zsl, double score, sds ele) {        /* ????????????????????????? */
     zskiplistNode *update[ZSKIPLIST_MAXLEVEL], *x;
     unsigned int rank[ZSKIPLIST_MAXLEVEL];
     int i, level;
@@ -220,20 +240,22 @@ int zslDelete(zskiplist *zsl, double score, sds ele, zskiplistNode **node) {
     int i;
 
     x = zsl->header;
-    for (i = zsl->level-1; i >= 0; i--) {
-        while (x->level[i].forward &&
-                (x->level[i].forward->score < score ||
-                    (x->level[i].forward->score == score &&
-                     sdscmp(x->level[i].forward->ele,ele) < 0)))
+    for (i = zsl->level-1; i >= 0; i--) {                                           //从最大level开始找
+        while (x->level[i].forward &&                                               //forward不为NULL
+                (x->level[i].forward->score < score ||                              //forward->score < score
+                    (x->level[i].forward->score == score &&                         //forward->score == score
+                     sdscmp(x->level[i].forward->ele,ele) < 0)))                    //forward->ele < ele
         {
-            x = x->level[i].forward;
+            x = x->level[i].forward;                                                //满足上述条件表示还没有找到相关节点,move forward
         }
         update[i] = x;
     }
     /* We may have multiple elements with the same score, what we need
-     * is to find the element with both the right score and object. */
+     * is to find the element with both the right score and object. 
+     * 找出 score & object都相同的 ele
+     * */
     x = x->level[0].forward;
-    if (x && score == x->score && sdscmp(x->ele,ele) == 0) {
+    if (x && score == x->score && sdscmp(x->ele,ele) == 0) {   //score & ele 都相同
         zslDeleteNode(zsl, x, update);
         if (!node)
             zslFreeNode(x);
@@ -248,13 +270,16 @@ int zslDelete(zskiplist *zsl, double score, sds ele, zskiplistNode **node) {
  * Note that the element must exist and must match 'score'.
  * This function does not update the score in the hash table side, the
  * caller should take care of it.
- *
+ *更新有序跳跃表元素的score值
+ *元素必须存在 & score必须匹配
+ * 该方法并不更行hashtable测的score值，调用的时候需小心
  * Note that this function attempts to just update the node, in case after
  * the score update, the node would be exactly at the same position.
  * Otherwise the skiplist is modified by removing and re-adding a new
  * element, which is more costly.
  *
- * The function returns the updated element skiplist node pointer. */
+ * The function returns the updated element skiplist node pointer. 
+ * */
 zskiplistNode *zslUpdateScore(zskiplist *zsl, double curscore, sds ele, double newscore) {
     zskiplistNode *update[ZSKIPLIST_MAXLEVEL], *x;
     int i;

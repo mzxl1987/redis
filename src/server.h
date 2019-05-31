@@ -878,21 +878,28 @@ struct sharedObjectsStruct {
 };
 
 /* ZSETs use a specialized version of Skiplists */
+/**
+ * 跳跃表的节点
+ */
 typedef struct zskiplistNode {
-    sds ele;
-    double score;
-    struct zskiplistNode *backward;
+    sds ele;                                       //元素
+    double score;                                  //分值
+    struct zskiplistNode *backward;                //会跳节点
     struct zskiplistLevel {
-        struct zskiplistNode *forward;
-        unsigned long span;
-    } level[];
+        struct zskiplistNode *forward;             //下一个跳跃节点
+        unsigned long span;                        //跨度
+    } level[];                                     //等级
 } zskiplistNode;
 
+/**
+ * 跳跃列表
+ */
 typedef struct zskiplist {
-    struct zskiplistNode *header, *tail;
-    unsigned long length;
-    int level;
+    struct zskiplistNode *header, *tail;            //跳跃表的 表头&结尾
+    unsigned long length;                           //长度
+    int level;                                      //等级
 } zskiplist;
+
 
 typedef struct zset {
     dict *dict;
