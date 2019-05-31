@@ -671,7 +671,13 @@ typedef struct clientReplyBlock {
 
 /* Redis database representation. There are multiple databases identified
  * by integers from 0 (the default database) up to the max configured
- * database. The database number is the 'id' field in the structure. */
+ * database. The database number is the 'id' field in the structure. 
+ * 
+ * redis数据库的实现
+ * 多个数据库的定义，默认0, 0 ~ 配置的最大值
+ * 数据库的编号是结构体中的field字段
+ * 
+ * */
 typedef struct redisDb {
     dict *dict;                 /* The keyspace for this DB */
     dict *expires;              /* Timeout of keys with a timeout set */

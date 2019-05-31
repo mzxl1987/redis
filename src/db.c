@@ -196,14 +196,14 @@ void dbOverwrite(redisDb *db, robj *key, robj *val) {
 
     serverAssertWithInfo(NULL,key,de != NULL);
     dictEntry auxentry = *de;
-    robj *old = dictGetVal(de);
+    robj *old = dictGetVal(de);                                          /* 取出原有数据 */
     if (server.maxmemory_policy & MAXMEMORY_FLAG_LFU) {
         val->lru = old->lru;
     }
-    dictSetVal(db->dict, de, val);
+    dictSetVal(db->dict, de, val);                                         /* 设置新数据 */
 
     if (server.lazyfree_lazy_server_del) {
-        freeObjAsync(old);
+        freeObjAsync(old);                                                 /* 异步释放原有数据 */
         dictSetVal(db->dict, &auxentry, NULL);
     }
 
@@ -217,7 +217,12 @@ void dbOverwrite(redisDb *db, robj *key, robj *val) {
  * 2) clients WATCHing for the destination key notified.
  * 3) The expire time of the key is reset (the key is made persistent).
  *
- * All the new keys in the database should be created via this interface. */
+ * All the new keys in the database should be created via this interface. 
+ * 
+ * 高等级的set操作
+ * 
+ * 
+ * */
 void setKey(redisDb *db, robj *key, robj *val) {
     if (lookupKeyWrite(db,key) == NULL) {
         dbAdd(db,key,val);
