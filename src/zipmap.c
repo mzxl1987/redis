@@ -47,24 +47,36 @@
  * <zmlen> is 1 byte length that holds the current size of the zipmap.
  * When the zipmap length is greater than or equal to 254, this value
  * is not used and the zipmap needs to be traversed to find out the length.
+ * 
+ * zmlen表示zipmap的长度，用1byte表示，如果长度大于254，这个值不可用，需要遍历zipmap才可以知道具体长度
  *
  * <len> is the length of the following string (key or value).
+ * len表示 key or value的值
  * <len> lengths are encoded in a single value or in a 5 bytes value.
  * If the first byte value (as an unsigned 8 bit value) is between 0 and
  * 253, it's a single-byte length. If it is 254 then a four bytes unsigned
  * integer follows (in the host byte ordering). A value of 255 is used to
  * signal the end of the hash.
+ * 
+ * len第一个字节 < 254,     则单字节长度，
+ * len 第一个字节= 254,  紧接着4bytes表示长度
+ * len = 255, 表示 hash结尾
  *
  * <free> is the number of free unused bytes after the string, resulting
  * from modification of values associated to a key. For instance if "foo"
  * is set to "bar", and later "foo" will be set to "hi", it will have a
  * free byte to use if the value will enlarge again later, or even in
  * order to add a key/value pair if it fits.
+ * 
+ * free 表示string后面未使用的字节数，
+ * 如 foo => bar 修改为 foo => hi, 这时候 free = 3-2，free主要是当value变大 或者添加新的key/value时使用
  *
  * <free> is always an unsigned 8 bit number, because if after an
  * update operation there are more than a few free bytes, the zipmap will be
  * reallocated to make sure it is as small as possible.
  *
+ * free 是 unsigned int , 8bit, 如果更新操作的值 > free bytes, zipmap则重新分配地址，使得free足够的小
+ * 
  * The most compact representation of the above two elements hash is actually:
  *
  * "\x02\x03foo\x03\x00bar\x05hello\x05\x00world\xff"
@@ -73,6 +85,10 @@
  * the lookup will take O(N) where N is the number of elements
  * in the zipmap and *not* the number of bytes needed to represent the zipmap.
  * This lowers the constant times considerably.
+ * 
+ * keys/values 是设定长度的object, 所以查找的时候需要O(N)复杂度，N表示zipmap中的元素数量，不是bytes的数量。
+ * 所以需要非常小的时间复杂度
+ * 
  */
 
 #include <stdio.h>
