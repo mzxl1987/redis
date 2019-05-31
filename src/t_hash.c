@@ -36,7 +36,12 @@
 
 /* Check the length of a number of objects to see if we need to convert a
  * ziplist to a real hash. Note that we only check string encoded objects
- * as their string length can be queried in constant time. */
+ * as their string length can be queried in constant time. 
+ * 
+ * 将ziplist转换成hashtable
+ * PS: 我们只是检查编码后对象的长度
+ * 
+ * */
 void hashTypeTryConversion(robj *o, robj **argv, int start, int end) {
     int i;
 
@@ -53,7 +58,11 @@ void hashTypeTryConversion(robj *o, robj **argv, int start, int end) {
 }
 
 /* Get the value from a ziplist encoded hash, identified by field.
- * Returns -1 when the field cannot be found. */
+ * Returns -1 when the field cannot be found. 
+ * 
+ * 获取ziplist编码后的hash值
+ * 
+ * */
 int hashTypeGetFromZiplist(robj *o, sds field,
                            unsigned char **vstr,
                            unsigned int *vlen,
@@ -65,18 +74,18 @@ int hashTypeGetFromZiplist(robj *o, sds field,
     serverAssert(o->encoding == OBJ_ENCODING_ZIPLIST);
 
     zl = o->ptr;
-    fptr = ziplistIndex(zl, ZIPLIST_HEAD);
+    fptr = ziplistIndex(zl, ZIPLIST_HEAD);             /* 获取head index */
     if (fptr != NULL) {
-        fptr = ziplistFind(fptr, (unsigned char*)field, sdslen(field), 1);
+        fptr = ziplistFind(fptr, (unsigned char*)field, sdslen(field), 1);             /* 查找相关数据，赋值field */
         if (fptr != NULL) {
             /* Grab pointer to the value (fptr points to the field) */
-            vptr = ziplistNext(zl, fptr);
+            vptr = ziplistNext(zl, fptr);                          /* 获取value的指针 */
             serverAssert(vptr != NULL);
         }
     }
 
     if (vptr != NULL) {
-        ret = ziplistGet(vptr, vstr, vlen, vll);
+        ret = ziplistGet(vptr, vstr, vlen, vll);                 /* 获取value的相关信息 */
         serverAssert(ret);
         return 0;
     }
@@ -162,7 +171,8 @@ size_t hashTypeGetValueLength(robj *o, sds field) {
 }
 
 /* Test if the specified field exists in the given hash. Returns 1 if the field
- * exists, and 0 when it doesn't. */
+ * exists, and 0 when it doesn't. 
+ * */
 int hashTypeExists(robj *o, sds field) {
     if (o->encoding == OBJ_ENCODING_ZIPLIST) {
         unsigned char *vstr = NULL;
