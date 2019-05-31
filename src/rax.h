@@ -1,5 +1,7 @@
 /* Rax -- A radix tree implementation.
  *
+ * 基数树的实现
+ * 
  * Copyright (c) 2017-2018, Salvatore Sanfilippo <antirez at gmail dot com>
  * All rights reserved.
  *
@@ -138,7 +140,11 @@ typedef struct rax {
 
 /* Stack data structure used by raxLowWalk() in order to, optionally, return
  * a list of parent nodes to the caller. The nodes do not have a "parent"
- * field for space concerns, so we use the auxiliary stack when needed. */
+ * field for space concerns, so we use the auxiliary stack when needed. 
+ * 
+ * 栈
+ * 
+ * */
 #define RAX_STACK_STATIC_ITEMS 32
 typedef struct raxStack {
     void **stack; /* Points to static_items or an heap allocated array. */
@@ -172,6 +178,9 @@ typedef int (*raxNodeCallback)(raxNode **noderef);
 #define RAX_ITER_EOF (1<<1)    /* End of iteration reached. */
 #define RAX_ITER_SAFE (1<<2)   /* Safe iterator, allows operations while
                                   iterating. But it is slower. */
+
+/* 迭代器 */
+
 typedef struct raxIterator {
     int flags;
     rax *rt;                /* Radix tree we are iterating. */

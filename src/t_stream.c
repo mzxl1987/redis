@@ -31,7 +31,7 @@
 #include "endianconv.h"
 #include "stream.h"
 
-#define STREAM_BYTES_PER_LISTPACK 2048
+#define STREAM_BYTES_PER_LISTPACK 2048       /* 每个list package的大小 */
 
 /* Every stream item inside the listpack, has a flags field that is used to
  * mark the entry as deleted, or having the same field as the "master"
@@ -49,6 +49,7 @@ size_t streamReplyWithRangeFromConsumerPEL(client *c, stream *s, streamID *start
  * ----------------------------------------------------------------------- */
 
 /* Create a new stream data structure. */
+/* 创建流 */
 stream *streamNew(void) {
     stream *s = zmalloc(sizeof(*s));
     s->rax = raxNew();
@@ -60,6 +61,7 @@ stream *streamNew(void) {
 }
 
 /* Free a stream, including the listpacks stored inside the radix tree. */
+/* 释放流 */
 void freeStream(stream *s) {
     raxFreeWithCallback(s->rax,(void(*)(void*))lpFree);
     if (s->cgroups)

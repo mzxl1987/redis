@@ -13,6 +13,7 @@ typedef struct streamID {
     uint64_t seq;       /* Sequence number. */
 } streamID;
 
+/* 流结构体 */
 typedef struct stream {
     rax *rax;               /* The radix tree holding the stream. */
     uint64_t length;        /* Number of elements inside this stream. */
@@ -26,6 +27,7 @@ typedef struct stream {
  * be implemented inside the function, but practically there is the AOF
  * rewriting code that also needs to iterate the stream to emit the XADD
  * commands. */
+/* 流迭代器 */
 typedef struct streamIterator {
     stream *stream;         /* The stream we are iterating. */
     streamID master_id;     /* ID of the master entry at listpack head. */

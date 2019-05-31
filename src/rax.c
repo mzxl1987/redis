@@ -86,9 +86,13 @@ void raxSetDebugMsg(int onoff) {
  * items are reached. It is used in order to retain the list of parent nodes
  * while walking the radix tree in order to implement certain operations that
  * need to navigate the tree upward.
+ * 
+ * rax栈 操作函数
+ * 
  * ------------------------------------------------------------------------- */
 
 /* Initialize the stack. */
+/* 初始化栈 */
 static inline void raxStackInit(raxStack *ts) {
     ts->stack = ts->static_items;
     ts->items = 0;
@@ -97,6 +101,7 @@ static inline void raxStackInit(raxStack *ts) {
 }
 
 /* Push an item into the stack, returns 1 on success, 0 on out of memory. */
+/* 压栈 */
 static inline int raxStackPush(raxStack *ts, void *ptr) {
     if (ts->items == ts->maxitems) {
         if (ts->stack == ts->static_items) {
@@ -126,6 +131,7 @@ static inline int raxStackPush(raxStack *ts, void *ptr) {
 
 /* Pop an item from the stack, the function returns NULL if there are no
  * items to pop. */
+/* 出栈 */
 static inline void *raxStackPop(raxStack *ts) {
     if (ts->items == 0) return NULL;
     ts->items--;
@@ -134,18 +140,21 @@ static inline void *raxStackPop(raxStack *ts) {
 
 /* Return the stack item at the top of the stack without actually consuming
  * it. */
+/* 返回栈顶数据 */
 static inline void *raxStackPeek(raxStack *ts) {
     if (ts->items == 0) return NULL;
     return ts->stack[ts->items-1];
 }
 
 /* Free the stack in case we used heap allocation. */
+/* 释放栈空间 */
 static inline void raxStackFree(raxStack *ts) {
     if (ts->stack != ts->static_items) rax_free(ts->stack);
 }
 
 /* ----------------------------------------------------------------------------
  * Radix tree implementation
+ * 基数树的实现
  * --------------------------------------------------------------------------*/
 
 /* Return the padding needed in the characters section of a node having size
@@ -156,6 +165,7 @@ static inline void raxStackFree(raxStack *ts) {
 
 /* Return the pointer to the last child pointer in a node. For the compressed
  * nodes this is the only child pointer. */
+/* 最后一个child指针 */
 #define raxNodeLastChildPtr(n) ((raxNode**) ( \
     ((char*)(n)) + \
     raxNodeCurrentLength(n) - \
@@ -164,6 +174,7 @@ static inline void raxStackFree(raxStack *ts) {
 ))
 
 /* Return the pointer to the first child pointer. */
+/* 第一个child指针 */
 #define raxNodeFirstChildPtr(n) ((raxNode**) ( \
     (n)->data + \
     (n)->size + \
@@ -172,6 +183,7 @@ static inline void raxStackFree(raxStack *ts) {
 /* Return the current total size of the node. Note that the second line
  * computes the padding after the string of characters, needed in order to
  * save pointers to aligned addresses. */
+/* 获取节点当前长度 */
 #define raxNodeCurrentLength(n) ( \
     sizeof(raxNode)+(n)->size+ \
     raxPadding((n)->size)+ \
@@ -183,6 +195,7 @@ static inline void raxStackFree(raxStack *ts) {
  * If datafiled is true, the allocation is made large enough to hold the
  * associated data pointer.
  * Returns the new node pointer. On out of memory NULL is returned. */
+/* 分配一个没有压缩的节点，如果datafield为true, 表示分配地址足够存放关联指针 */
 raxNode *raxNewNode(size_t children, int datafield) {
     size_t nodesize = sizeof(raxNode)+children+raxPadding(children)+
                       sizeof(raxNode*)*children;
