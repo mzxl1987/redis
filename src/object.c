@@ -65,6 +65,8 @@ robj *createObject(int type, void *ptr) {
  *
  * robj *myobject = makeObjectShared(createObject(...));
  *
+ * 
+ * 
  */
 robj *makeObjectShared(robj *o) {
     serverAssert(o->refcount == 1);
@@ -350,8 +352,11 @@ void incrRefCount(robj *o) {
     if (o->refcount != OBJ_SHARED_REFCOUNT) o->refcount++;
 }
 
+/**
+ * 减少引用数量
+ */
 void decrRefCount(robj *o) {
-    if (o->refcount == 1) {
+    if (o->refcount == 1) {                    //如果引用数量为1, 则表明是孤立的对象。可以释放
         switch(o->type) {
         case OBJ_STRING: freeStringObject(o); break;
         case OBJ_LIST: freeListObject(o); break;
@@ -364,8 +369,8 @@ void decrRefCount(robj *o) {
         }
         zfree(o);
     } else {
-        if (o->refcount <= 0) serverPanic("decrRefCount against refcount <= 0");
-        if (o->refcount != OBJ_SHARED_REFCOUNT) o->refcount--;
+        if (o->refcount <= 0) serverPanic("decrRefCount against refcount <= 0");     // refcount <= 0， 则打印提示信息
+        if (o->refcount != OBJ_SHARED_REFCOUNT)          o->refcount--;                  //refcount != OBJ_SHARED_REFCOUNT,  则 refcount--
     }
 }
 
