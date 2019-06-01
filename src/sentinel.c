@@ -460,7 +460,7 @@ struct redisCommand sentinelcmds[] = {
 /* This function overwrites a few normal Redis config default with Sentinel
  * specific defaults. */
 void initSentinelConfig(void) {
-    server.port = REDIS_SENTINEL_PORT;
+    server.port = REDIS_SENTINEL_PORT;     /* 哨兵端口 */
     server.protected_mode = 0; /* Sentinel must be exposed. */
 }
 
@@ -470,7 +470,7 @@ void initSentinel(void) {
 
     /* Remove usual Redis commands from the command table, then just add
      * the SENTINEL command. */
-    dictEmpty(server.commands,NULL);
+    dictEmpty(server.commands,NULL);      /* 从命令列表中移除常用的redis命令,然后加入哨兵命令 */
     for (j = 0; j < sizeof(sentinelcmds)/sizeof(sentinelcmds[0]); j++) {
         int retval;
         struct redisCommand *cmd = sentinelcmds+j;
@@ -500,7 +500,11 @@ void initSentinel(void) {
 }
 
 /* This function gets called when the server is in Sentinel mode, started,
- * loaded the configuration, and is ready for normal operations. */
+ * loaded the configuration, and is ready for normal operations. 
+ * 
+ * 该方法只有服务器是哨兵模式，已启动，已加载配置，且准备正常操作
+ * 
+ * */
 void sentinelIsRunning(void) {
     int j;
 
@@ -517,21 +521,29 @@ void sentinelIsRunning(void) {
 
     /* If this Sentinel has yet no ID set in the configuration file, we
      * pick a random one and persist the config on disk. From now on this
-     * will be this Sentinel ID across restarts. */
+     * will be this Sentinel ID across restarts. 
+     * 
+     * 如果哨兵还没有ID，随机生成一个&存储在disk, 之后哨兵就有ID了，重启之后
+     * 
+     * */
     for (j = 0; j < CONFIG_RUN_ID_SIZE; j++)
         if (sentinel.myid[j] != 0) break;
 
     if (j == CONFIG_RUN_ID_SIZE) {
         /* Pick ID and persist the config. */
         getRandomHexChars(sentinel.myid,CONFIG_RUN_ID_SIZE);
-        sentinelFlushConfig();
+        sentinelFlushConfig();          /** 更新哨兵配置  */
     }
 
     /* Log its ID to make debugging of issues simpler. */
     serverLog(LL_WARNING,"Sentinel ID is %s", sentinel.myid);
 
     /* We want to generate a +monitor event for every configured master
-     * at startup. */
+     * at startup. 
+     * 
+     * 启动的时候我们都要为每一个配置的master添加事件监听
+     * 
+     * */
     sentinelGenerateInitialMonitorEvents();
 }
 
@@ -584,15 +596,15 @@ int sentinelAddrIsEqual(sentinelAddr *a, sentinelAddr *b) {
 /* =========================== Events notification ========================== */
 
 /* Send an event to log, pub/sub, user notification script.
- *
+ * 发送一个事件到log, pub/sub,用户通知脚本
  * 'level' is the log level for logging. Only LL_WARNING events will trigger
  * the execution of the user notification script.
- *
+ * level : 是日志等级
  * 'type' is the message type, also used as a pub/sub channel name.
- *
+ *  type : 消息类型, 也可用作pub/sub channel名字
  * 'ri', is the redis instance target of this event if applicable, and is
  * used to obtain the path of the notification script to execute.
- *
+ *  ri : redis instance,该事件的redis实例,& 可用作通知脚本的可执行路径
  * The remaining arguments are printf-alike.
  * If the format specifier starts with the two characters "%@" then ri is
  * not NULL, and the message is prefixed with an instance identifier in the
@@ -607,6 +619,7 @@ int sentinelAddrIsEqual(sentinelAddr *a, sentinelAddr *b) {
  *
  *  Any other specifier after "%@" is processed by printf itself.
  */
+/** 添加哨兵的事件  */
 void sentinelEvent(int level, char *type, sentinelRedisInstance *ri,
                    const char *fmt, ...) {
     va_list ap;
@@ -648,7 +661,7 @@ void sentinelEvent(int level, char *type, sentinelRedisInstance *ri,
     if (level != LL_DEBUG) {
         channel = createStringObject(type,strlen(type));
         payload = createStringObject(msg,strlen(msg));
-        pubsubPublishMessage(channel,payload);
+        pubsubPublishMessage(channel,payload);           /** 发布/订阅消息  */
         decrRefCount(channel);
         decrRefCount(payload);
     }
@@ -674,8 +687,8 @@ void sentinelGenerateInitialMonitorEvents(void) {
 
     di = dictGetIterator(sentinel.masters);
     while((de = dictNext(di)) != NULL) {
-        sentinelRedisInstance *ri = dictGetVal(de);
-        sentinelEvent(LL_WARNING,"+monitor",ri,"%@ quorum %d",ri->quorum);
+        sentinelRedisInstance *ri = dictGetVal(de);     /**  获取哨兵实例  */
+        sentinelEvent(LL_WARNING,"+monitor",ri,"%@ quorum %d",ri->quorum);     /** 添加哨兵事件, 并配置 quorum(哨兵支持SDOWN的数量) */
     }
     dictReleaseIterator(di);
 }

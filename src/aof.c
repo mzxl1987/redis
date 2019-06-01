@@ -725,11 +725,22 @@ int loadAppendOnlyFile(char *filename) {
     }
 
     /* Temporarily disable AOF, to prevent EXEC from feeding a MULTI
-     * to the same file we're about to read. */
+     * to the same file we're about to read. 
+     * EXEC : 命令用于执行所有事务块内的命令
+     * MULTI : 标记一个事务块的开始。
+     * 
+     * 命令的排布:
+     * MULTI 
+     * .........
+     * EXEC 
+     * 
+     * 临时关闭AOF,为了阻止 EXEC 在载入 MULTI的时候
+     * 
+     * */
     server.aof_state = AOF_OFF;
 
-    fakeClient = createFakeClient();
-    startLoading(fp);
+    fakeClient = createFakeClient();   /** 为了加载AOF,创建一个fake client */
+    startLoading(fp);                  /** 加载数据  */
 
     /* Check if this AOF file has an RDB preamble. In that case we need to
      * load the RDB file and later continue loading the AOF tail. */
@@ -739,11 +750,11 @@ int loadAppendOnlyFile(char *filename) {
         if (fseek(fp,0,SEEK_SET) == -1) goto readerr;
     } else {
         /* RDB preamble. Pass loading the RDB functions. */
-        rio rdb;
+        rio rdb;  /** 创建 redis IO  */
 
         serverLog(LL_NOTICE,"Reading RDB preamble from AOF file...");
         if (fseek(fp,0,SEEK_SET) == -1) goto readerr;
-        rioInitWithFile(&rdb,fp);
+        rioInitWithFile(&rdb,fp);         /** 初始化文件   */
         if (rdbLoadRio(&rdb,NULL,1) != C_OK) {
             serverLog(LL_WARNING,"Error reading the RDB preamble of the AOF file, AOF loading aborted");
             goto readerr;

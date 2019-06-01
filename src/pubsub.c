@@ -36,6 +36,7 @@ int clientSubscriptionsCount(client *c);
  *----------------------------------------------------------------------------*/
 
 /* Send a pubsub message of type "message" to the client. */
+/* 向客户端发布一个消息 type = message   */
 void addReplyPubsubMessage(client *c, robj *channel, robj *msg) {
     if (c->resp == 2)
         addReply(c,shared.mbulkhdr[3]);
@@ -48,7 +49,11 @@ void addReplyPubsubMessage(client *c, robj *channel, robj *msg) {
 
 /* Send a pubsub message of type "pmessage" to the client. The difference
  * with the "message" type delivered by addReplyPubsubMessage() is that
- * this message format also includes the pattern that matched the message. */
+ * this message format also includes the pattern that matched the message. 
+ * 
+ * 向客户端发送 pmessage, 与message不同的时候消息格式中含有正则表达式
+ * 
+ * */
 void addReplyPubsubPatMessage(client *c, robj *pat, robj *channel, robj *msg) {
     if (c->resp == 2)
         addReply(c,shared.mbulkhdr[4]);
@@ -277,6 +282,7 @@ int pubsubUnsubscribeAllPatterns(client *c, int notify) {
 }
 
 /* Publish a message */
+/** 发布消息   */
 int pubsubPublishMessage(robj *channel, robj *message) {
     int receivers = 0;
     dictEntry *de;
@@ -284,7 +290,7 @@ int pubsubPublishMessage(robj *channel, robj *message) {
     listIter li;
 
     /* Send to clients listening for that channel */
-    de = dictFind(server.pubsub_channels,channel);
+    de = dictFind(server.pubsub_channels,channel);       /** 查找通道  */
     if (de) {
         list *list = dictGetVal(de);
         listNode *ln;
@@ -292,8 +298,8 @@ int pubsubPublishMessage(robj *channel, robj *message) {
 
         listRewind(list,&li);
         while ((ln = listNext(&li)) != NULL) {
-            client *c = ln->value;
-            addReplyPubsubMessage(c,channel,message);
+            client *c = ln->value;                           /** 获取客户端  */
+            addReplyPubsubMessage(c,channel,message);        /** 发布消息    */
             receivers++;
         }
     }
@@ -310,7 +316,7 @@ int pubsubPublishMessage(robj *channel, robj *message) {
                                 sdslen(channel->ptr),0))
             {
                 addReplyPubsubPatMessage(pat->client,
-                    pat->pattern,channel,message);
+                    pat->pattern,channel,message);              /** 发送带有模式匹配的消息  */
                 receivers++;
             }
         }

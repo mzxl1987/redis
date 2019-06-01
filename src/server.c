@@ -2099,6 +2099,7 @@ void afterSleep(struct aeEventLoop *eventLoop) {
 
 /* =========================== Server initialization ======================== */
 
+/** 创建共享对象  */
 void createSharedObjects(void) {
     int j;
 
@@ -2202,33 +2203,36 @@ void createSharedObjects(void) {
     shared.maxstring = sdsnew("maxstring");
 }
 
+/**
+ * 初始化服务器
+ */
 void initServerConfig(void) {
     int j;
 
-    updateCachedTime();
-    getRandomHexChars(server.runid,CONFIG_RUN_ID_SIZE);
-    server.runid[CONFIG_RUN_ID_SIZE] = '\0';
-    changeReplicationId();
-    clearReplicationId2();
-    server.timezone = getTimeZone(); /* Initialized by tzset(). */
+    updateCachedTime();          //更新缓存时间
+    getRandomHexChars(server.runid,CONFIG_RUN_ID_SIZE);    /* 生成runid */
+    server.runid[CONFIG_RUN_ID_SIZE] = '\0';               /* 给runid 设置 \0结束  */
+    changeReplicationId();                                 /* 修改 复制id  */
+    clearReplicationId2();                                 /* 作废副复制id(从master继承的复制ID)  */
+    server.timezone = getTimeZone(); /* Initialized by tzset(). 初始化时区 */
     server.configfile = NULL;
     server.executable = NULL;
-    server.hz = server.config_hz = CONFIG_DEFAULT_HZ;
-    server.dynamic_hz = CONFIG_DEFAULT_DYNAMIC_HZ;
+    server.hz = server.config_hz = CONFIG_DEFAULT_HZ;       /*  频率 */
+    server.dynamic_hz = CONFIG_DEFAULT_DYNAMIC_HZ;          /*  动态频率  */
     server.arch_bits = (sizeof(long) == 8) ? 64 : 32;
-    server.port = CONFIG_DEFAULT_SERVER_PORT;
-    server.tcp_backlog = CONFIG_DEFAULT_TCP_BACKLOG;
+    server.port = CONFIG_DEFAULT_SERVER_PORT;               /*  端口  */
+    server.tcp_backlog = CONFIG_DEFAULT_TCP_BACKLOG;        /*  tcp 监听 积压数量  ,这么理解可能不太对  */
     server.bindaddr_count = 0;
     server.unixsocket = NULL;
     server.unixsocketperm = CONFIG_DEFAULT_UNIX_SOCKET_PERM;
-    server.ipfd_count = 0;
+    server.ipfd_count = 0;                                    /* ipfd 使用的插槽数量  */
     server.sofd = -1;
     server.protected_mode = CONFIG_DEFAULT_PROTECTED_MODE;
     server.gopher_enabled = CONFIG_DEFAULT_GOPHER_ENABLED;
-    server.dbnum = CONFIG_DEFAULT_DBNUM;
-    server.verbosity = CONFIG_DEFAULT_VERBOSITY;
-    server.maxidletime = CONFIG_DEFAULT_CLIENT_TIMEOUT;
-    server.tcpkeepalive = CONFIG_DEFAULT_TCP_KEEPALIVE;
+    server.dbnum = CONFIG_DEFAULT_DBNUM;                     /* 默认数据库数量   */
+    server.verbosity = CONFIG_DEFAULT_VERBOSITY;             /* 日志等级的配置 */
+    server.maxidletime = CONFIG_DEFAULT_CLIENT_TIMEOUT;       /* client 最大空闲时间  */
+    server.tcpkeepalive = CONFIG_DEFAULT_TCP_KEEPALIVE;       /* 保持TCP alive的时间   */
     server.active_expire_enabled = 1;
     server.active_defrag_enabled = CONFIG_DEFAULT_ACTIVE_DEFRAG;
     server.active_defrag_ignore_bytes = CONFIG_DEFAULT_DEFRAG_IGNORE_BYTES;
@@ -2485,7 +2489,12 @@ int restartServer(int flags, mstime_t delay) {
  *
  * If it will not be possible to set the limit accordingly to the configured
  * max number of clients, the function will do the reverse setting
- * server.maxclients to the value that we can actually handle. */
+ * server.maxclients to the value that we can actually handle. 
+ * 
+ * 调整 打开文件限制数量
+ * 该函数将试图增加打开文件的最大数量,与此同时也会配置最大clients数量.
+ * 
+ * */
 void adjustOpenFilesLimit(void) {
     rlim_t maxfiles = server.maxclients+CONFIG_MIN_RESERVED_FDS;
     struct rlimit limit;
@@ -2581,14 +2590,22 @@ void checkTcpBacklogSettings(void) {
 /* Initialize a set of file descriptors to listen to the specified 'port'
  * binding the addresses specified in the Redis server configuration.
  *
+ * 根据Redis服务器配置, 监听相应的端口和IP
+ * 
  * The listening file descriptors are stored in the integer array 'fds'
  * and their number is set in '*count'.
+ * 
+ * 监听文件的描述存储在fds数组中,而下标则设置在count中
  *
  * The addresses to bind are specified in the global server.bindaddr array
  * and their number is server.bindaddr_count. If the server configuration
  * contains no specific addresses to bind, this function will try to
  * bind * (all addresses) for both the IPv4 and IPv6 protocols.
  *
+ * server.bindaddr 数组中存储了需要绑定的address
+ * server.bindaddr_count 代表address的数量
+ * 如果服务器的配置文件没有指定绑定的address,则将试图绑定*(所有IP,包括IP4&IP6)
+ * 
  * On success the function returns C_OK.
  *
  * On error the function returns C_ERR. For the function to be on
@@ -2608,7 +2625,7 @@ int listenToPort(int port, int *fds, int *count) {
             /* Bind * for both IPv6 and IPv4, we enter here only if
              * server.bindaddr_count == 0. */
             fds[*count] = anetTcp6Server(server.neterr,port,NULL,
-                server.tcp_backlog);
+                server.tcp_backlog);                     /** 创建 server and listen */
             if (fds[*count] != ANET_ERR) {
                 anetNonBlock(NULL,fds[*count]);
                 (*count)++;
@@ -2620,7 +2637,7 @@ int listenToPort(int port, int *fds, int *count) {
             if (*count == 1 || unsupported) {
                 /* Bind the IPv4 address as well. */
                 fds[*count] = anetTcpServer(server.neterr,port,NULL,
-                    server.tcp_backlog);
+                    server.tcp_backlog);                  /** 创建 server and listen */
                 if (fds[*count] != ANET_ERR) {
                     anetNonBlock(NULL,fds[*count]);
                     (*count)++;
@@ -2708,6 +2725,7 @@ void initServer(void) {
             server.syslog_facility);
     }
 
+    /** 实例化相关对象 */
     server.hz = server.config_hz;
     server.pid = getpid();
     server.current_client = NULL;
@@ -2726,8 +2744,9 @@ void initServer(void) {
     server.clients_paused = 0;
     server.system_memory_size = zmalloc_get_memory_size();
 
-    createSharedObjects();
-    adjustOpenFilesLimit();
+    
+    createSharedObjects();                   /** 创建共享对象  */
+    adjustOpenFilesLimit();                  /** 调整文件打开限制数量  */
     server.el = aeCreateEventLoop(server.maxclients+CONFIG_FDSET_INCR);
     if (server.el == NULL) {
         serverLog(LL_WARNING,
@@ -2739,7 +2758,7 @@ void initServer(void) {
 
     /* Open the TCP listening socket for the user commands. */
     if (server.port != 0 &&
-        listenToPort(server.port,server.ipfd,&server.ipfd_count) == C_ERR)
+        listenToPort(server.port,server.ipfd,&server.ipfd_count) == C_ERR)  /** 监听 PORT */
         exit(1);
 
     /* Open the listening Unix domain socket. */
@@ -4549,15 +4568,18 @@ int checkForSentinelMode(int argc, char **argv) {
     return 0;
 }
 
-/* Function called at startup to load RDB or AOF file in memory. */
+/** Function called at startup to load RDB or AOF file in memory. 
+ * 加载 redis database file OR aof file到内存
+ * 优先加载 aof
+*/
 void loadDataFromDisk(void) {
     long long start = ustime();
-    if (server.aof_state == AOF_ON) {
-        if (loadAppendOnlyFile(server.aof_filename) == C_OK)
+    if (server.aof_state == AOF_ON) {                           /* 判断aof是否打开  */
+        if (loadAppendOnlyFile(server.aof_filename) == C_OK)    /* 加载 aof 文件 */
             serverLog(LL_NOTICE,"DB loaded from append only file: %.3f seconds",(float)(ustime()-start)/1000000);
-    } else {
+    } else {                                                    /** aof 没有打开  */
         rdbSaveInfo rsi = RDB_SAVE_INFO_INIT;
-        if (rdbLoad(server.rdb_filename,&rsi) == C_OK) {
+        if (rdbLoad(server.rdb_filename,&rsi) == C_OK) {        /** 打开 redis database file */
             serverLog(LL_NOTICE,"DB loaded from disk: %.3f seconds",
                 (float)(ustime()-start)/1000000);
 
@@ -4574,9 +4596,13 @@ void loadDataFromDisk(void) {
                 server.master_repl_offset = rsi.repl_offset;
                 /* If we are a slave, create a cached master from this
                  * information, in order to allow partial resynchronizations
-                 * with masters. */
+                 * with masters. 
+                 * 
+                 * 如果我们是slave,创建一个cached master从自身, 为了masters完成部分同步
+                 * 
+                 * */
                 replicationCacheMasterUsingMyself();
-                selectDb(server.cached_master,rsi.repl_stream_db);
+                selectDb(server.cached_master,rsi.repl_stream_db);   /** 选择数据库    */
             }
         } else if (errno != ENOENT) {
             serverLog(LL_WARNING,"Fatal error loading the DB: %s. Exiting.",strerror(errno));
@@ -4748,20 +4774,18 @@ int main(int argc, char **argv) {
     gettimeofday(&tv,NULL);                              /* 一天中的时间  */
 
     char hashseed[16];
-    getRandomHexChars(hashseed,sizeof(hashseed));         /* 生成随机的hex的hash种子, 种子的作用是什么? 什么地方会用到? */
+    getRandomHexChars(hashseed,sizeof(hashseed));         /* 生成随机的hex的hash种子*/
     dictSetHashFunctionSeed((uint8_t*)hashseed);
-    server.sentinel_mode = checkForSentinelMode(argc,argv);   /*  检查redis的哨兵模式，不知翻译的是否恰当，作用是什么?  */
-    initServerConfig();                                       /* 初始化服务器的配置, 初始化了哪些配置? 有什么作用? */
+    server.sentinel_mode = checkForSentinelMode(argc,argv);   /*  检查redis的哨兵模式，不知翻译的是否恰当  */
+    initServerConfig();                                       /* 初始化服务器的配置 */
     ACLInit(); /* The ACL subsystem must be initialized ASAP because the
                   basic networking code and client creation depends on it. */
     /** ACL 子系统必须初始化为 ASAP,因为基础网络代码 & 客户端的创建都依赖于它
-     *
-     * ACL 是什么? ASAP 是什么? 为什么networking code & client creation 都依赖于 ACL/ASAP?
      * 
      */
 
 
-    moduleInitModulesSystem();        /* module系统的初始化，module系统中包含哪些东西? */
+    moduleInitModulesSystem();        /* module系统的初始化*/
 
     /* Store the executable path and arguments in a safe place in order
      * to be able to restart the server later. */
@@ -4788,9 +4812,9 @@ int main(int argc, char **argv) {
      * so that we can easily execute an RDB check on loading errors. */
     /**  什么事 rdb mode & aof mode ?  */
     if (strstr(argv[0],"redis-check-rdb") != NULL)
-        redis_check_rdb_main(argc,argv,NULL);               /** check 的时候做了哪些事 */
+        redis_check_rdb_main(argc,argv,NULL);               
     else if (strstr(argv[0],"redis-check-aof") != NULL)
-        redis_check_aof_main(argc,argv);                    /** check 的时候做了哪些事 */
+        redis_check_aof_main(argc,argv);                    
 
     /** 解析输入的指令   */
     if (argc >= 2) {
@@ -4883,7 +4907,7 @@ int main(int argc, char **argv) {
     if (background || server.pidfile) createPidFile();       /** 创建Pid文件  */
     redisSetProcTitle(argv[0]);          /** 设置进程 title , proc = process */
     redisAsciiArt();                     /** 用ascii码打印logo */
-    checkTcpBacklogSettings();           /** 检查tcp后台日志的设置, 设置了哪些东西? **/
+    checkTcpBacklogSettings();           /** 检查 tcp的积压 设置 **/
 
     if (!server.sentinel_mode) {       /** 哨兵模式下的一些设置  */
         /* Things not needed when running in Sentinel mode. */
@@ -4891,8 +4915,8 @@ int main(int argc, char **argv) {
     #ifdef __linux__
         linuxMemoryWarnings();
     #endif
-        moduleLoadFromQueue();           /** 从队列中加载module, 加载了哪些module? module的作用是什么? */
-        ACLLoadUsersAtStartup();         /** ACL 加载用户 在启动的时候, 如何加载用户的? */
+        moduleLoadFromQueue();           /** 从队列中加载module */
+        ACLLoadUsersAtStartup();         /** ACL 加载用户 在启动的时候 */
         loadDataFromDisk();              /** 从磁盘加载数据 , 如何加载数据的? 加载了哪些数据? */
         if (server.cluster_enabled) {
             if (verifyClusterConfigWithData() == C_ERR) {   /**通过数据验证集群的配置， 如何验证的? */

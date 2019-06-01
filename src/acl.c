@@ -849,7 +849,7 @@ void ACLInitDefaultUser(void) {
 void ACLInit(void) {
     Users = raxNew();
     UsersToLoad = listCreate();
-    ACLInitDefaultUser();
+    ACLInitDefaultUser();          /* 初始化默认用户  */
 }
 
 /* Check the username and password pair and return C_OK if they are valid,

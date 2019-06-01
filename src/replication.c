@@ -1005,7 +1005,13 @@ void updateSlavesWaitingBgsave(int bgsaveerr, int type) {
 /* Change the current instance replication ID with a new, random one.
  * This will prevent successful PSYNCs between this master and other
  * slaves, so the command should be called when something happens that
- * alters the current story of the dataset. */
+ * alters the current story of the dataset. 
+ * 
+ * 将当前实例的复制 ID修改为一个新的随机值
+ * 它能够成功的阻止主从同步
+ * 所以这命令只有在特殊情况发生导致修改了当前存储的数据时才会调用.
+ * 
+ * */
 void changeReplicationId(void) {
     getRandomHexChars(server.replid,CONFIG_RUN_ID_SIZE);
     server.replid[CONFIG_RUN_ID_SIZE] = '\0';
@@ -1013,7 +1019,12 @@ void changeReplicationId(void) {
 
 /* Clear (invalidate) the secondary replication ID. This happens, for
  * example, after a full resynchronization, when we start a new replication
- * history. */
+ * history. 
+ * 
+ * 作废次要的复制ID
+ * 当全部再次同步之后, 我们开始一个新的复制历史
+ * 
+ * */
 void clearReplicationId2(void) {
     memset(server.replid2,'0',sizeof(server.replid));
     server.replid2[CONFIG_RUN_ID_SIZE] = '\0';
@@ -2215,11 +2226,20 @@ void replicationCacheMaster(client *c) {
  * create from scratch a cached master for the new client, that will allow
  * to PSYNC with the slave that was promoted as the new master after a
  * failover.
+ * 
+ * 当master转变为slave的时候调用，目的是为新的client抹去master缓存.
+ * 将允许PSYNC 当宕机之后从slave中升迁一个新的master
  *
  * Assuming this instance was previously the master instance of the new master,
  * the new master will accept its replication ID, and potentiall also the
  * current offset if no data was lost during the failover. So we use our
- * current replication ID and offset in order to synthesize a cached master. */
+ * current replication ID and offset in order to synthesize a cached master. 
+ * 
+ * 假设new master实例就是以前的master, 则new master 将接受自己的replication ID，如果宕机期间没有数据丢失
+ * 当前偏移量也是之前的.
+ * 所以我们用当前的replicationID & offset 生成 cached master.
+ * 
+ * */
 void replicationCacheMasterUsingMyself(void) {
     /* The master client we create can be set to any DBID, because
      * the new master will start its replication stream with SELECT. */

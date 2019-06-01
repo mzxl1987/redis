@@ -60,6 +60,7 @@
     #endif
 #endif
 
+/** 创建事件环对象  */
 aeEventLoop *aeCreateEventLoop(int setsize) {
     aeEventLoop *eventLoop;
     int i;
@@ -373,7 +374,7 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
         struct timeval tv, *tvp;
 
         if (flags & AE_TIME_EVENTS && !(flags & AE_DONT_WAIT))
-            shortest = aeSearchNearestTimer(eventLoop);
+            shortest = aeSearchNearestTimer(eventLoop);        /** 查找最近的时间绑定  */
         if (shortest) {
             long now_sec, now_ms;
 
@@ -407,7 +408,11 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
         }
 
         /* Call the multiplexing API, will return only on timeout or when
-         * some event fires. */
+         * some event fires. 
+         * 
+         * 返回超时事件 or 绑定的事件
+         * 
+         * */
         numevents = aeApiPoll(eventLoop, tvp);
 
         /* After sleep callback. */
@@ -493,12 +498,13 @@ int aeWait(int fd, int mask, long long milliseconds) {
     }
 }
 
+/** 事件主循环 */
 void aeMain(aeEventLoop *eventLoop) {
     eventLoop->stop = 0;
     while (!eventLoop->stop) {
         if (eventLoop->beforesleep != NULL)
             eventLoop->beforesleep(eventLoop);
-        aeProcessEvents(eventLoop, AE_ALL_EVENTS|AE_CALL_AFTER_SLEEP);
+        aeProcessEvents(eventLoop, AE_ALL_EVENTS|AE_CALL_AFTER_SLEEP);          /** 处理所有事件 */
     }
 }
 

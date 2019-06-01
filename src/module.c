@@ -5039,6 +5039,7 @@ dictType moduleAPIDictType = {
     NULL                       /* val destructor */
 };
 
+/** module 注册 api */
 int moduleRegisterApi(const char *funcname, void *funcptr) {
     return dictAdd(server.moduleapi, (char*)funcname, funcptr);
 }
@@ -5312,7 +5313,11 @@ size_t moduleCount(void) {
 }
 
 /* Register all the APIs we export. Keep this function at the end of the
- * file so that's easy to seek it to add new entries. */
+ * file so that's easy to seek it to add new entries. 
+ * 
+ * 注册所有API
+ * 
+ * */
 void moduleRegisterCoreAPI(void) {
     server.moduleapi = dictCreate(&moduleAPIDictType,NULL);
     server.sharedapi = dictCreate(&moduleAPIDictType,NULL);
