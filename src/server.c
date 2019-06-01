@@ -4707,6 +4707,9 @@ int main(int argc, char **argv) {
     struct timeval tv;
     int j;
 
+/**
+ * 定义了redis的测试部分
+ */
 #ifdef REDIS_TEST
     if (argc == 3 && !strcasecmp(argv[1], "test")) {
         if (!strcasecmp(argv[2], "ziplist")) {
@@ -4734,26 +4737,35 @@ int main(int argc, char **argv) {
 #endif
 
     /* We need to initialize our libraries, and the server configuration. */
+    /** 初始化我们库函数, 和服务器的配置 */
 #ifdef INIT_SETPROCTITLE_REPLACEMENT
     spt_init(argc, argv);
 #endif
     setlocale(LC_COLLATE,"");
     tzset(); /* Populates 'timezone' global. */
-    zmalloc_set_oom_handler(redisOutOfMemoryHandler);
+    zmalloc_set_oom_handler(redisOutOfMemoryHandler);   /* 给redisOutOfMenoryHandler 分配空间, oom = OutOfMemory */
     srand(time(NULL)^getpid());
-    gettimeofday(&tv,NULL);
+    gettimeofday(&tv,NULL);                              /* 一天中的时间  */
 
     char hashseed[16];
-    getRandomHexChars(hashseed,sizeof(hashseed));
+    getRandomHexChars(hashseed,sizeof(hashseed));         /* 生成随机的hex的hash种子, 种子的作用是什么? 什么地方会用到? */
     dictSetHashFunctionSeed((uint8_t*)hashseed);
-    server.sentinel_mode = checkForSentinelMode(argc,argv);
-    initServerConfig();
+    server.sentinel_mode = checkForSentinelMode(argc,argv);   /*  检查redis的哨兵模式，不知翻译的是否恰当，作用是什么?  */
+    initServerConfig();                                       /* 初始化服务器的配置, 初始化了哪些配置? 有什么作用? */
     ACLInit(); /* The ACL subsystem must be initialized ASAP because the
                   basic networking code and client creation depends on it. */
-    moduleInitModulesSystem();
+    /** ACL 子系统必须初始化为 ASAP,因为基础网络代码 & 客户端的创建都依赖于它
+     *
+     * ACL 是什么? ASAP 是什么? 为什么networking code & client creation 都依赖于 ACL/ASAP?
+     * 
+     */
+
+
+    moduleInitModulesSystem();        /* module系统的初始化，module系统中包含哪些东西? */
 
     /* Store the executable path and arguments in a safe place in order
      * to be able to restart the server later. */
+    /**  存储 可执行路径(绝对路径) & 传入的参数 到 安全区, 为了以后能够重启服务  */
     server.executable = getAbsolutePath(argv[0]);
     server.exec_argv = zmalloc(sizeof(char*)*(argc+1));
     server.exec_argv[argc] = NULL;
@@ -4762,19 +4774,25 @@ int main(int argc, char **argv) {
     /* We need to init sentinel right now as parsing the configuration file
      * in sentinel mode will have the effect of populating the sentinel
      * data structures with master nodes to monitor. */
+    /**
+     * 初始化哨兵通过转换配置文件，在哨兵模式下，主节点可以更有效的监视繁衍出来的哨兵。
+     * 感觉翻译欠妥^_6
+     */
     if (server.sentinel_mode) {
-        initSentinelConfig();
-        initSentinel();
+        initSentinelConfig();      /* 配置哨兵 */
+        initSentinel();            /* 初始化哨兵 */
     }
 
     /* Check if we need to start in redis-check-rdb/aof mode. We just execute
      * the program main. However the program is part of the Redis executable
      * so that we can easily execute an RDB check on loading errors. */
+    /**  什么事 rdb mode & aof mode ?  */
     if (strstr(argv[0],"redis-check-rdb") != NULL)
-        redis_check_rdb_main(argc,argv,NULL);
+        redis_check_rdb_main(argc,argv,NULL);               /** check 的时候做了哪些事 */
     else if (strstr(argv[0],"redis-check-aof") != NULL)
-        redis_check_aof_main(argc,argv);
+        redis_check_aof_main(argc,argv);                    /** check 的时候做了哪些事 */
 
+    /** 解析输入的指令   */
     if (argc >= 2) {
         j = 1; /* First option to parse in argv[] */
         sds options = sdsempty();
@@ -4856,27 +4874,28 @@ int main(int argc, char **argv) {
         serverLog(LL_WARNING, "Configuration loaded");
     }
 
+    /** 监督模式  */
     server.supervised = redisIsSupervised(server.supervised_mode);
     int background = server.daemonize && !server.supervised;
     if (background) daemonize();
 
-    initServer();
-    if (background || server.pidfile) createPidFile();
-    redisSetProcTitle(argv[0]);
-    redisAsciiArt();
-    checkTcpBacklogSettings();
+    initServer();           /** 初始化服务器, 具体初始化了什么?  */
+    if (background || server.pidfile) createPidFile();       /** 创建Pid文件  */
+    redisSetProcTitle(argv[0]);          /** 设置进程 title , proc = process */
+    redisAsciiArt();                     /** 用ascii码打印logo */
+    checkTcpBacklogSettings();           /** 检查tcp后台日志的设置, 设置了哪些东西? **/
 
-    if (!server.sentinel_mode) {
+    if (!server.sentinel_mode) {       /** 哨兵模式下的一些设置  */
         /* Things not needed when running in Sentinel mode. */
         serverLog(LL_WARNING,"Server initialized");
     #ifdef __linux__
         linuxMemoryWarnings();
     #endif
-        moduleLoadFromQueue();
-        ACLLoadUsersAtStartup();
-        loadDataFromDisk();
+        moduleLoadFromQueue();           /** 从队列中加载module, 加载了哪些module? module的作用是什么? */
+        ACLLoadUsersAtStartup();         /** ACL 加载用户 在启动的时候, 如何加载用户的? */
+        loadDataFromDisk();              /** 从磁盘加载数据 , 如何加载数据的? 加载了哪些数据? */
         if (server.cluster_enabled) {
-            if (verifyClusterConfigWithData() == C_ERR) {
+            if (verifyClusterConfigWithData() == C_ERR) {   /**通过数据验证集群的配置， 如何验证的? */
                 serverLog(LL_WARNING,
                     "You can't have keys in a DB different than DB 0 when in "
                     "Cluster mode. Exiting.");
@@ -4888,7 +4907,7 @@ int main(int argc, char **argv) {
         if (server.sofd > 0)
             serverLog(LL_NOTICE,"The server is now ready to accept connections at %s", server.unixsocket);
     } else {
-        sentinelIsRunning();
+        sentinelIsRunning();       /**   处于哨兵模式下时候， 该函数做了哪些事情? */
     }
 
     /* Warning the user about suspicious maxmemory setting. */
@@ -4896,10 +4915,10 @@ int main(int argc, char **argv) {
         serverLog(LL_WARNING,"WARNING: You specified a maxmemory value that is less than 1MB (current value is %llu bytes). Are you sure this is what you really want?", server.maxmemory);
     }
 
-    aeSetBeforeSleepProc(server.el,beforeSleep);
-    aeSetAfterSleepProc(server.el,afterSleep);
-    aeMain(server.el);
-    aeDeleteEventLoop(server.el);
+    aeSetBeforeSleepProc(server.el,beforeSleep);   /** 设置进程休眠的 before event */   
+    aeSetAfterSleepProc(server.el,afterSleep);     /** 设置进程休眠的 after event */
+    aeMain(server.el);                             /** 设置event loop 的主要方法 */
+    aeDeleteEventLoop(server.el);                  /** 删除 event loop */
     return 0;
 }
 
