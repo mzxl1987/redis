@@ -64,12 +64,16 @@ typedef struct list {
 } list;
 
 /* Functions implemented as macros */
-#define listLength(l) ((l)->len)
-#define listFirst(l) ((l)->head)
-#define listLast(l) ((l)->tail)
-#define listPrevNode(n) ((n)->prev)
-#define listNextNode(n) ((n)->next)
-#define listNodeValue(n) ((n)->value)
+/**
+ * 宏定义
+ */
+
+#define listLength(l) ((l)->len)           // 获取队列长度
+#define listFirst(l) ((l)->head)           // 获取队列第一个结点
+#define listLast(l) ((l)->tail)            // 获取队列最后一个节点
+#define listPrevNode(n) ((n)->prev)        // 获取队列前一个节点
+#define listNextNode(n) ((n)->next)        // 获取队列下一个节点
+#define listNodeValue(n) ((n)->value)      // 获取队列节点的值
 
 #define listSetDupMethod(l,m) ((l)->dup = (m))
 #define listSetFreeMethod(l,m) ((l)->free = (m))
@@ -80,10 +84,10 @@ typedef struct list {
 #define listGetMatchMethod(l) ((l)->match)
 
 /* Prototypes */
-list *listCreate(void);
-void listRelease(list *list);
-void listEmpty(list *list);
-list *listAddNodeHead(list *list, void *value);
+list *listCreate(void);                                                             
+void listRelease(list *list);                                                       
+void listEmpty(list *list);                                                         
+list *listAddNodeHead(list *list, void *value);                                     
 list *listAddNodeTail(list *list, void *value);
 list *listInsertNode(list *list, listNode *old_node, void *value, int after);
 void listDelNode(list *list, listNode *node);
