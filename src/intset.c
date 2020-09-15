@@ -124,7 +124,7 @@ static intset *intsetResize(intset *is, uint32_t len) {
  * sets "pos" to the position of the value within the intset. Return 0 when
  * the value is not present in the intset and sets "pos" to the position
  * where "value" can be inserted. 
- * 通过值查找位置
+ * 通过值查找位置合适的位置
  * */
 static uint8_t intsetSearch(intset *is, int64_t value, uint32_t *pos) {
     int min = 0, max = intrev32ifbe(is->length)-1, mid = -1;
@@ -146,7 +146,11 @@ static uint8_t intsetSearch(intset *is, int64_t value, uint32_t *pos) {
         }
     }
 
-    /** 折半法查找 */
+    /** 折半法查找 
+     * 
+     * Q : 有点疑问的是，没有按序排放，如何使用折半查找法?
+     * A : 是因为数据在插入队列之前,都会从原有队列中获取一个合适的位置, 一遍移动队列,然后将该值插入!
+     */
     while(max >= min) {
         mid = ((unsigned int)min + (unsigned int)max) >> 1;
         cur = _intsetGet(is,mid);
@@ -196,10 +200,13 @@ static intset *intsetUpgradeAndAdd(intset *is, int64_t value) {
     return is;
 }
 
-/* |_________|___________|_________|
- * head      to          from      tail
- * move [from - tail] to [to] position
- * 将from及后面的元素移动至to位置
+/* |____________|_________|.......................|
+ * head        from      tail                     to
+ * |____________|_________|_______________________|__________|
+ * head                                         from(to)    tail
+ *
+ * move tail to new position
+ * 移动队列尾部数据( 既可以左移也可以右移 )
  **/
 static void intsetMoveTail(intset *is, uint32_t from, uint32_t to) {
     void *src, *dst;
@@ -233,23 +240,23 @@ intset *intsetAdd(intset *is, int64_t value, uint8_t *success) {
     /* Upgrade encoding if necessary. If we need to upgrade, we know that
      * this value should be either appended (if > 0) or prepended (if < 0),
      * because it lies outside the range of existing values. */
-    if (valenc > intrev32ifbe(is->encoding)) {                     //如果当前插入的值得编码 > intset的编码,则将intset的编码升级
+    if (valenc > intrev32ifbe(is->encoding)) {                     // 如果当前链表编码长度不够需要升级编码长度，然后在做插入操作
         /* This always succeeds, so we don't need to curry *success. */
-        return intsetUpgradeAndAdd(is,value);
-    } else {
+        return intsetUpgradeAndAdd(is,value);                      // 升级编码长度
+    } else {                                                       
         /* Abort if the value is already present in the set.
          * This call will populate "pos" with the right position to insert
          * the value when it cannot be found. */
-        if (intsetSearch(is,value,&pos)) {    //如果已存在，则终止操作
-            if (success) *success = 0;
+        if (intsetSearch(is,value,&pos)) {    // 查找并返回位置
+            if (success) *success = 0;        // 数据已存在, 返回success = 0.
             return is;
         }
 
-        is = intsetResize(is,intrev32ifbe(is->length)+1);
-        if (pos < intrev32ifbe(is->length)) intsetMoveTail(is,pos,pos+1);     //需明白intsetMoveTail的作用????????????????
+        is = intsetResize(is,intrev32ifbe(is->length)+1);                     //拓展容量
+        if (pos < intrev32ifbe(is->length)) intsetMoveTail(is,pos,pos+1);     //移动队列，为了方便插入数据!
     }
 
-    _intsetSet(is,pos,value);
+    _intsetSet(is,pos,value);                                                 //设置节点的值
     is->length = intrev32ifbe(intrev32ifbe(is->length)+1);
     return is;
 }
