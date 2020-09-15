@@ -60,16 +60,16 @@ void listEmpty(list *list)                                                     /
     unsigned long len;
     listNode *current, *next;
 
-    current = list->head;
-    len = list->len;
-    while(len--) {
-        next = current->next;
-        if (list->free) list->free(current->value);
-        zfree(current);
-        current = next;
+    current = list->head;                               // 获取链表头
+    len = list->len;                                    // 获取链表长度
+    while(len--) {                                      // 判断长度
+        next = current->next;                           // 获取下一个节点指针
+        if (list->free) list->free(current->value);     // 判断是否有free方法, 释放当前节点值
+        zfree(current);                                 // 释放当前节点
+        current = next;                                 // 重新获取当前节点
     }
-    list->head = list->tail = NULL;
-    list->len = 0;
+    list->head = list->tail = NULL;                      // 清空头尾指针
+    list->len = 0;                                       // 清空链表长度
 }
 
 /* Free the whole list.
@@ -78,8 +78,8 @@ void listEmpty(list *list)                                                     /
  
 void listRelease(list *list)                                                      // 释放列表申请的空间
 {
-    listEmpty(list);
-    zfree(list);
+    listEmpty(list);         //清空链表
+    zfree(list);             //释放链表空间
 }
 
 /* Add a new node to the list, to head, containing the specified 'value'
@@ -93,17 +93,17 @@ list *listAddNodeHead(list *list, void *value)                              // �
 {
     listNode *node;
 
-    if ((node = zmalloc(sizeof(*node))) == NULL)
-        return NULL;
-    node->value = value;
-    if (list->len == 0) {
-        list->head = list->tail = node;
-        node->prev = node->next = NULL;
-    } else {
-        node->prev = NULL;
-        node->next = list->head;
-        list->head->prev = node;
-        list->head = node;
+    if ((node = zmalloc(sizeof(*node))) == NULL)          // 申请节点空间
+        return NULL;                                      // 申请失败, 返回空值
+    node->value = value;                                  // 节点赋值
+    if (list->len == 0) {                 //当前队列 等于0 的时候
+        list->head = list->tail = node;   // head =tail -> node
+        node->prev = node->next = NULL;   // x <- node -> x
+    } else {                              //当长度 不等于 0 的时候
+        node->prev = NULL;                // x <- node
+        node->next = list->head;          // node -> head
+        list->head->prev = node;          // node <- head
+        list->head = node;                // head = node
     }
     list->len++;
     return list;
@@ -119,17 +119,17 @@ list *listAddNodeTail(list *list, void *value)                              // �
 {
     listNode *node;
 
-    if ((node = zmalloc(sizeof(*node))) == NULL)
-        return NULL;
+    if ((node = zmalloc(sizeof(*node))) == NULL)     // 申请节点空间
+        return NULL;                                 // 失败返回NULL
     node->value = value;
-    if (list->len == 0) {
-        list->head = list->tail = node;
-        node->prev = node->next = NULL;
-    } else {
-        node->prev = list->tail;
-        node->next = NULL;
-        list->tail->next = node;
-        list->tail = node;
+    if (list->len == 0) {                            // 当长度 等于 0
+        list->head = list->tail = node;              // head = tail -> node
+        node->prev = node->next = NULL;              // x <- node -> x
+    } else {                                         // 当长度 不等于 0
+        node->prev = list->tail;                     // tail <- node
+        node->next = NULL;                           // node -> x
+        list->tail->next = node;                     // tail -> node
+        list->tail = node;                           // tail = node
     }
     list->len++;
     return list;
