@@ -196,7 +196,11 @@ static intset *intsetUpgradeAndAdd(intset *is, int64_t value) {
     return is;
 }
 
-/* ?????????????????????????? */
+/* |_________|___________|_________|
+ * head      to          from      tail
+ * move [from - tail] to [to] position
+ * 将from及后面的元素移动至to位置
+ **/
 static void intsetMoveTail(intset *is, uint32_t from, uint32_t to) {
     void *src, *dst;
     uint32_t bytes = intrev32ifbe(is->length)-from;
@@ -258,6 +262,9 @@ intset *intsetRemove(intset *is, int64_t value, int *success) {
     uint32_t pos;
     if (success) *success = 0;
 
+    /**
+     * 比较目标值和队列的编码关系, 查找数据是否存在
+     **/
     if (valenc <= intrev32ifbe(is->encoding) && intsetSearch(is,value,&pos)) {
         uint32_t len = intrev32ifbe(is->length);
 
